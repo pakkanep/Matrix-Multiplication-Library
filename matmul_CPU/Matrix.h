@@ -5,8 +5,8 @@ typedef double double4_t __attribute__ ((vector_size (4 * sizeof(double))));
 
 class Matrix
 {
+    public:
     static constexpr int nb = 4;
-
     int rows;
     int cols;
     int na;
@@ -14,7 +14,6 @@ class Matrix
     std::vector<double> data;
     std::vector<double4_t> vecData;
 
-    public:
     Matrix(int rows, int cols)
         : rows(rows),
           cols(cols),
@@ -25,13 +24,11 @@ class Matrix
     }
 
 
-        // Non-const version
     double& operator()(int row, int col)
     {
         return data[this->cols * row + col];
     }
 
-    // Const version
     const double& operator()(int row, int col) const
     {
         return data[this->cols * row + col];
@@ -56,7 +53,6 @@ class Matrix
     void SetVec(int col, int row, int i, double val);
 
     double getItem(int col, int row) const;
-
     double getVecItem(int col, int row, int i) const;
 
 
@@ -153,18 +149,8 @@ class Matrix
     int blockCols
     );
 
-    static void kernel1(
-        int rows,
-        int cols,
-        int iBlock,
-        int jBlock,
-        int kBlock,
-        const double* srcA,
-        const double* srcB,
-        double* dest,
-        int an, int bn, int cn
-    );
-    static void kernel2(
+
+    static void kernel(
         int rows,
         int cols,
         int iBlock,
@@ -176,13 +162,13 @@ class Matrix
     );
 
 
+    static void        matMulV1(Matrix& dest, const Matrix& srcA, const Matrix& srcB);
+    static void        matMulV2(Matrix& dest, const Matrix& srcA, const Matrix& srcB);
+    static void        matMulV3(Matrix& dest, const Matrix& srcA, const Matrix& srcB);
     static void        matMulV4(Matrix& dest, const Matrix& srcA, const Matrix& srcB);
-    static void        matMulV5(Matrix& dest, const Matrix& srcA, const Matrix& srcB);
+    
+    static void        matMulV5(Matrix& dest, const Matrix& srcA);
     static void        matMulV6(Matrix& dest, const Matrix& srcA, const Matrix& srcB);
-    static void        matMulV7(Matrix& dest, const Matrix& srcA, const Matrix& srcB);
-    static void        matMulV8(Matrix& dest, const Matrix& srcA);
-    static void        matMulV9(Matrix& dest, const Matrix& srcA);
-    static void        matMulV10(Matrix& dest, const Matrix& srcA);
 
     void printScalar() const;
     void printVec()    const;
