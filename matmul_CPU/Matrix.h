@@ -3,100 +3,70 @@
 #include <iostream>
 typedef double double4_t __attribute__ ((vector_size (4 * sizeof(double))));
 
+template <typename T>
 class Matrix
 {
     public:
-    static constexpr int nb = 4;
     int rows;
     int cols;
-    int na;
+    std::vector<T> data;
 
-    std::vector<double> data;
-    std::vector<double4_t> vecData;
+    //___vectorized___
+    // int na;
+    // static constexpr int nb = 4;
+    // std::vector<double4_t> vecData; // broken beacuse template
 
     Matrix(int rows, int cols)
         : rows(rows),
           cols(cols),
-          na( (cols + nb - 1 ) / nb ),
-          data(rows * cols, 0.0),
-          vecData( (rows * na ), double4_t{0.0, 0.0, 0.0, 0.0})
+          data(rows * cols)
+          // na( (cols + nb - 1 ) / nb ),
+          // vecData( (rows * na ), double4_t{0.0, 0.0, 0.0, 0.0})
     {
     }
 
 
-    double& operator()(int row, int col)
-    {
-        return data[this->cols * row + col];
-    }
-
-    const double& operator()(int row, int col) const
+    T& operator()(int row, int col)
     {
         return data[this->cols * row + col];
     }
 
-    double* scalarData(int row)
+    const T& operator()(int row, int col) const
+    {
+        return data[this->cols * row + col];
+    }
+
+    T* scalarData(int row)
     {
         return data.data() + row * this->cols;
     }
 
-    const double* scalarData(int row) const
+    const T* scalarData(int row) const
     {
         return data.data() + row * this->cols;
     }
 
-    double4_t* vectorData(int row)
-    {
-        return vecData.data() + row * this->na;
-    }
-
-    void Set(int col, int row, double v);
-    void SetVec(int col, int row, int i, double val);
-
-    double getItem(int col, int row) const;
-    double getVecItem(int col, int row, int i) const;
-
-
-    static void MOV(Matrix& dest, Matrix& src);
-
-    static void scalarBlock(
-    const double* a,
-    const double* mb,
-    double* c,
-    int Bcols,
-    int Acols,
-    int blockRows,
-    int blockDepth,
-    int blockCols,
-    const Matrix &dest
-    );
-
-    static void scalarBlockV2(
-    const double* a,
-    const double* mb,
-    double* c,
-    int Bcols,
-    int Acols,
-    int blockRows,
-    int blockDepth,
-    int blockCols
-    );
-
-    static void scalarBlockV3(
-    const double* a,
-    const double* mb,
-    double* c,
-    int Bcols,
-    int Acols,
-    int blockRows,
-    int blockDepth,
-    int blockCols
-    );
+    void printScalar() const;
+    void Set(int col, int row, T v);
+    T getItem(int col, int row) const;
+    void initToZero();
 
     
-    static void scalarBlockV4(
-    const double* a,
-    const double* mb,
-    double* c,
+    // ____vectorized____
+    // double4_t* vectorData(int row)
+    // {
+    //     return vecData.data() + row * this->na;
+    // }
+
+    // void SetVec(int col, int row, int i, double val);
+    // double getVecItem(int col, int row, int i) const;
+    // void printVec()    const;
+        
+    
+    static void baseLineKernelV1(
+    const T* a,
+    const T* mb,
+    T* c,
     int Bcols,
     int Acols,
     int blockRows,
@@ -104,72 +74,34 @@ class Matrix
     int blockCols
     );
 
-    static void avxBlock(
-    const double* a,
-    const double* mb,
-    double* c,
+    static void baseLineKernelV2(
+    const T* a,
+    const T* mb,
+    T* c,
     int Bcols,
     int Acols,
     int blockRows,
     int blockDepth,
     int blockCols
     );
-
-    static void avxBlockV2(
-    const double* a,
-    const double* mb,
-    double* c,
-    int Bcols,
-    int Acols,
-    int blockRows,
-    int blockDepth,
-    int blockCols
-    );
-
-    static void avx512Block(
-    const double* a,
-    const double* mb,
-    double* c,
-    int Bcols,
-    int Acols,
-    int blockRows,
-    int blockDepth,
-    int blockCols
-    );
-
-    template<int BcolsReg, int ArowsReg, int BcolsCache, int AcolsCache>
-    static void cacheAwareAvxBlock(
-    const double* a,
-    const double* mb,
-    double* c,
-    int Bcols,
-    int Acols,
-    int blockRows,
-    int blockDepth,
-    int blockCols
-    );
-
 
     static void kernel(
+        const T* srcA,
+        const T* srcB,
+        T* dest,
         int rows,
         int cols,
         int iBlock,
         int jBlock,
-        int kBlock,
-        const double* srcA,
-        const double* srcB,
-        double* dest
+        int kBlock
     );
 
 
+    static void        matMul(Matrix& dest, const Matrix& srcA, const Matrix& srcB);
     static void        matMulV1(Matrix& dest, const Matrix& srcA, const Matrix& srcB);
     static void        matMulV2(Matrix& dest, const Matrix& srcA, const Matrix& srcB);
     static void        matMulV3(Matrix& dest, const Matrix& srcA, const Matrix& srcB);
     static void        matMulV4(Matrix& dest, const Matrix& srcA, const Matrix& srcB);
+    static void        matMulV5(Matrix& dest, const Matrix& srcA, const Matrix& srcB);
     
-    static void        matMulV5(Matrix& dest, const Matrix& srcA);
-    static void        matMulV6(Matrix& dest, const Matrix& srcA, const Matrix& srcB);
-
-    void printScalar() const;
-    void printVec()    const;
 };
