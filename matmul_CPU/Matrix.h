@@ -1,7 +1,9 @@
 #pragma once
 #include <vector>
 #include <iostream>
+
 typedef double double4_t __attribute__ ((vector_size (4 * sizeof(double))));
+typedef double double8_t __attribute__ ((vector_size (8 * sizeof(double))));
 
 template <typename T>
 class Matrix
@@ -11,20 +13,12 @@ class Matrix
     int cols;
     std::vector<T> data;
 
-    //___vectorized___
-    // int na;
-    // static constexpr int nb = 4;
-    // std::vector<double4_t> vecData; // broken beacuse template
-
     Matrix(int rows, int cols)
         : rows(rows),
           cols(cols),
           data(rows * cols)
-          // na( (cols + nb - 1 ) / nb ),
-          // vecData( (rows * na ), double4_t{0.0, 0.0, 0.0, 0.0})
     {
     }
-
 
     T& operator()(int row, int col)
     {
@@ -51,24 +45,13 @@ class Matrix
     T getItem(int col, int row) const;
     void initToZero();
 
-    
-    // ____vectorized____
-    // double4_t* vectorData(int row)
-    // {
-    //     return vecData.data() + row * this->na;
-    // }
 
-    // void SetVec(int col, int row, int i, double val);
-    // double getVecItem(int col, int row, int i) const;
-    // void printVec()    const;
-        
-    
     static void baseLineKernelV1(
     const T* a,
     const T* mb,
     T* c,
-    int Bcols,
     int Acols,
+    int Bcols,
     int blockRows,
     int blockDepth,
     int blockCols
@@ -78,19 +61,41 @@ class Matrix
     const T* a,
     const T* mb,
     T* c,
-    int Bcols,
     int Acols,
+    int Bcols,
     int blockRows,
     int blockDepth,
     int blockCols
     );
 
-    static void kernel(
+
+    static void kernelSIMD256(
         const T* srcA,
         const T* srcB,
         T* dest,
-        int rows,
-        int cols,
+        int Arows,
+        int Bcols,
+        int iBlock,
+        int jBlock,
+        int kBlock
+    );
+
+    static void kernelSIMD512(
+        const T* srcA,
+        const T* srcB,
+        T* dest,
+        int Arows,
+        int Bcols,
+        int iBlock,
+        int jBlock,
+        int kBlock
+    );
+    static void kernelSIMD512V2(
+        const T* srcA,
+        const T* srcB,
+        T* dest,
+        int Arows,
+        int Bcols,
         int iBlock,
         int jBlock,
         int kBlock
@@ -103,5 +108,8 @@ class Matrix
     static void        matMulV3(Matrix& dest, const Matrix& srcA, const Matrix& srcB);
     static void        matMulV4(Matrix& dest, const Matrix& srcA, const Matrix& srcB);
     static void        matMulV5(Matrix& dest, const Matrix& srcA, const Matrix& srcB);
+    static void        matMulV6(Matrix& dest, const Matrix& srcA, const Matrix& srcB);
+    static void        matMulV7(Matrix& dest, const Matrix& srcA, const Matrix& srcB);
+    static void        matMulV8(Matrix& dest, const Matrix& srcA, const Matrix& srcB);
     
 };

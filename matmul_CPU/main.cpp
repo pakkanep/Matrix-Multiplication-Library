@@ -123,9 +123,6 @@ void matMulTestSuite()
     int rows = 2000;
     int cols = 2000;
 
-    constexpr int nb = 4;
-    int na = (cols + nb - 1) / nb;
-
     Matrix m1   = Matrix<T>(rows, cols);
     Matrix m2   = Matrix<T>(rows, cols);
     Matrix dest = Matrix<T>(rows, cols);
@@ -145,7 +142,12 @@ void matMulTestSuite()
     // benchmark<T>(Matrix<double>::matMulV2, dest, m1, m2);
     // benchmark<T>(Matrix<double>::matMulV3, dest, m1, m2);
     // benchmark<T>(Matrix<double>::matMulV4, dest, m1, m2);
-    benchmark<T>(Matrix<double>::matMulV5, dest, m1, m2);
+    // benchmark<T>(Matrix<double>::matMulV5, dest, m1, m2);
+    // benchmark<T>(Matrix<double>::matMulV6, dest, m1, m2);
+    // benchmark<T>(Matrix<double>::matMulV7, dest, m1, m2);
+    benchmark<T>(Matrix<double>::matMulV8, dest, m1, m2);
+    
+    // Matrix<double>::matMulV8(dest, m1, m2);
     // dest.printScalar();
 }
 
