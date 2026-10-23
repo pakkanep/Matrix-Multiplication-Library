@@ -1,11 +1,12 @@
 #include <iostream>
 #include <cstdint>
-#include "Matrix.h"
 #include <memory>
 #include <chrono>
 #include <cmath>
 #include <vector>
 #include <algorithm>
+
+#include "matmul_CPU/matrix.h"
 
 typedef double double4_t __attribute__ ((vector_size (4 * sizeof(double))));
 
