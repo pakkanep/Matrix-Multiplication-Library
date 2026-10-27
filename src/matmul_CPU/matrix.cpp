@@ -256,12 +256,14 @@ void Matrix<T>::matMul(Matrix<T>& dest, const Matrix<T>& srcA, const Matrix<T>& 
     
     for (int i = 0; i < Arows; ++i)
     {
-        for (int k = 0; k < Acols; ++k)
+        for (int j = 0; j < Bcols; ++j)
         {
-            for (int j = 0; j < Bcols; ++j)
+            T sum = {};
+            for (int k = 0; k < Acols; ++k)
             {
-                dest(i, j) += srcA(i, k) * srcB(k, j);
+                sum += srcA(i, k) * srcB(k, j);
             }
+            dest(i, j) = sum;
         }
     }
 }
