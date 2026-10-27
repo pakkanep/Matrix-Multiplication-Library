@@ -28,17 +28,17 @@ peak FP64 = 4 (cores) * 2.4 (GHz) * (2 * 4 * 2 ) = 153.6 GFLOP/s
 
 | Implementation | Description | Block Size | Median Time (s) | Performance (GFLOP/s) | % of Theoretical Peak | Speedup vs. Naive |
 |:---------------|:------------|:----------:|----------------:|----------------------:|----------------------:|------------------:|
-| `matMul`    | Naive implementation | — | 7.891 | 2.03 | 0.57% | 1.00× |
-| `matMulV1`  | Linear memory access for A and B | — | 3.960 | 4.04 | 2.63% | 1.99× |
-| `matMulV2`  | Cache blocking with linear memory access | 64 | 1.716 | 9.32 | 6.07% | 4.60× |
-| `matMulV3`  | Cache blocking with reduced memory traffic | 64 | 1.218 | 13.14 | 8.55% | 6.48× |
-| `matMulV4`  | Baseline OpenMP implementation | — | 3.908 | 4.09 | 1.15% | 2.02× |
-| `matMulV5`  | Cache blocking + OpenMP + linear memory access | 64 | 0.351 | 45.60 | 29.69% | 22.49× |
-| `matMulV6`  | V5 + 256-bit SIMD | 64 | 0.534 | 29.99 | 19.53% | 14.79× |
-| `matMulV7`  | V5 + 512-bit SIMD | 64 | 0.480 | 33.31 | 21.69% | 16.43× |
-| `matMulV8`  | V7 + separate block sizes per dimension | TODO | 0.332 | 48.12 | 31.33% | 23.73× |
-| `matMulV9`  | V5 + 512-bit SIMD + register blocking | 64 | 0.303 | 52.78 | 34.36% | 26.03× |
-| `matMulV10` | V9 + separate block sizes per dimension | TODO | **0.175** | **91.58** | **59.62%** | **45.17×** |
+| `matMul`    | Naive implementation | — | 25.899 | 0.62 | 0.40% | 1.00× |
+| `matMulV1`  | Linear memory access for A and B | — | 3.960 | 4.04 | 2.63% | 6.54× |
+| `matMulV2`  | Cache blocking with linear memory access | 64 | 1.716 | 9.32 | 6.07% | 15.09× |
+| `matMulV3`  | Cache blocking with reduced memory traffic | 64 | 1.218 | 13.14 | 8.55% | 21.27× |
+| `matMulV4`  | OpenMP + linear memory access | — | 1.102 | 14.52 | 9.45% | 23.51× |
+| `matMulV5`  | Cache blocking + OpenMP + linear memory access | 64 | 0.351 | 45.60 | 29.69% | 73.82× |
+| `matMulV6`  | V5 + 256-bit SIMD | 64 | 0.534 | 29.99 | 19.53% | 48.55× |
+| `matMulV7`  | V5 + 512-bit SIMD | 64 | 0.480 | 33.31 | 21.69% | 53.92× |
+| `matMulV8`  | V7 + separate block sizes per dimension | TODO | 0.332 | 48.12 | 31.33% | 77.90× |
+| `matMulV9`  | V5 + 512-bit SIMD + register blocking | 64 | 0.303 | 52.78 | 34.36% | 85.43× |
+| `matMulV10` | V9 + separate block sizes per dimension | TODO | **0.175** | **91.58** | **59.62%** | **148.24×** |
 
 ### SIMD Performance
 

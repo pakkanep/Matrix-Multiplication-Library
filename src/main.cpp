@@ -87,14 +87,14 @@ void matMulTestSuite()
     }
     
 
-    benchmark<T>(Matrix<double>::matMulV10, dest, m1, m2);
+    benchmark<T>(Matrix<double>::matMulV4, dest, m1, m2);
     
 
     dest.initToZero();
     PerfCounter pc;
     
     auto instructions = pc.measure( [&] {
-        Matrix<double>::matMulV10(dest, m1, m2);
+        Matrix<double>::matMulV4(dest, m1, m2);
     });
 
     std::cout << "used instructions: " << instructions << "\n";

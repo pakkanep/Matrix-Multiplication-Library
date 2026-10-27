@@ -420,14 +420,12 @@ void Matrix<T>::matMulV4(Matrix<T>& dest, const Matrix<T>& srcA, const Matrix<T>
     #pragma omp parallel for schedule(dynamic)
     for (int i = 0; i < rowsA; ++i)
     {
-        for (int j = 0; j < colsB; ++j)
+        for (int k = 0; k < colsA; ++k)
         {
-            double sum = 0.0;
-            for (int k = 0; k < colsA; ++k)
+            for (int j = 0; j < colsB; ++j)
             {
-                sum += srcA(i, k) * srcB(k, j);
+                dest(i, j) += srcA(i, k) * srcB(k, j);
             }
-            dest.Set(i, j, sum);
         }
     }
 }
