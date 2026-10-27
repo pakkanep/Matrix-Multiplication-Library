@@ -7,60 +7,9 @@
 #include <algorithm>
 
 #include "matmul_CPU/matrix.h"
+#include "perf_counting.hpp"
+#include "utils.cpp"
 
-typedef double double4_t __attribute__ ((vector_size (4 * sizeof(double))));
-
-uint32_t pcg_hash(uint32_t input)
-{
-    uint32_t state = input * 747796405u + 2891336453u;
-    uint32_t word = ((state >> ((state >> 28u) + 4u)) ^ state) * 277803737u;
-    return (word >> 22u) ^ word;
-}
-
-double random_double(uint32_t seed)
-{
-    return static_cast<double>(pcg_hash(seed)) / static_cast<double>(UINT32_MAX);
-}
-
-void detectSimd()
-{
-    #if defined(__x86_64__) || defined(__i386__)
-        __builtin_cpu_init();
-
-        if (__builtin_cpu_supports("avx512f")) {
-            std::cout << "AVX-512: 8 doubles per vector\n";
-        } else if (__builtin_cpu_supports("avx2")) {
-            std::cout << "AVX2: 4 doubles per vector\n";
-        } else if (__builtin_cpu_supports("sse2")) {
-            std::cout << "SSE2: 2 doubles per vector\n";
-        } else {
-            std::cout << "Scalar implementation\n";
-        }
-    #endif
-}
-
-
-void createVecMat(int rows, int cols, const double *data, double4_t *vecMat)
-{
-    // elements per vector
-    constexpr int nb = 4;
-    // vectors per input row
-    int na = (cols + nb - 1) / nb; // Each row has cols elements
-    
-    
-    for (int row = 0; row < rows; ++row)
-    {
-        for (int vec = 0; vec < na; ++vec)
-        {
-            for (int i = 0; i < nb; ++i)
-            {
-                int j = vec * nb + i;
-                vecMat[na * row + vec][i] = j < cols ? static_cast<double>(data[cols * row + j]) : 0.0;
-            }
-            
-        }
-    }
-}
 
 template <typename T, typename Func>
 double benchmark(
@@ -105,7 +54,8 @@ double benchmark(
     // FLOP/s to GFLOP/s
     double gflops = flops / median / 1e9;
     // calculations shown at the end of this file
-    constexpr double theoreticalPeak = 355.2;
+    // constexpr double theoreticalPeak = 355.2;
+    constexpr double theoreticalPeak = 153.6;
 
     double percentOfPeak = (gflops / theoreticalPeak) * 100.0;
 
@@ -146,31 +96,28 @@ void matMulTestSuite()
     // benchmark<T>(Matrix<double>::matMulV5, dest, m1, m2);
     // benchmark<T>(Matrix<double>::matMulV6, dest, m1, m2);
     // benchmark<T>(Matrix<double>::matMulV7, dest, m1, m2);
-    benchmark<T>(Matrix<double>::matMulV8, dest, m1, m2);
+    // benchmark<T>(Matrix<double>::matMulV8, dest, m1, m2);
+    PerfCounter pc;
     
+    auto instructions = pc.measure( [&] {
+        Matrix<double>::matMul(dest, m1, m2);
+    });
+
+    std::cout << "used instructions: " << instructions << "\n";
     // Matrix<double>::matMulV8(dest, m1, m2);
-    // dest.printScalar();
+    // Matrix<double>::matMul(dest, m1, m2);
+    //dest.printScalar();
 }
 
 int main()
 {
+    detectSimd();
     matMulTestSuite<double>();
 }
 
 
 /*
-g++ -std=c++20 -O3 -march=native -fopenmp main.cpp Matrix.cpp -o program
-
-lscpu:
-CPU(s):               12
-Thread(s) per core:   2
-Core(s) per socket:   6
-
-Caches (sum of all):      
-  L1d:                    192 KiB (6 instances)
-  L1i:                    192 KiB (6 instances)
-  L2:                     6 MiB (6 instances)
-  L3:                     32 MiB (1 instance)
+Notes:
 
 general Peak GFLOP/s = cores x GHz x FLOPs/cycle/core
 
@@ -188,4 +135,9 @@ FMA      Fused Multiply-Add
 FLOP     Floating-Point Operation
 GFLOP/s  10^9 floating operations per second
 
+i5
+4 cores
+2.4 GHz
+2 * 4 * 2 = 16 FLOPs/cycle/core
+peak FP64 = 4 (cores) * 2.4 (GHz) * (2 * 4 * 2 ) = 153.6 GFLOP/s
 */
