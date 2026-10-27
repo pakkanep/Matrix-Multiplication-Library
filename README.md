@@ -1,37 +1,44 @@
 #  matmul
 ## Performance Benchmarks
-I ran these benchmarks under WSL2, so these are more indicative than really accurate.
 
-Performed using `double` precision (FP64).
+## TODO:
+- add padding. Some design qs:
+    - entirely hidden from the user?
+    - should the padded dims only be used internally and the user only sees the dims that was initialized
+    - below
 
-The theoretical peak performance of the Ryzen 5 7500F at its
-3.7 GHz base clock is:
+- bite the bullet and implement packing. Organize the data in the same order it's accessed during computation. pack the data every time before matmul?
 
-$$
-\text{Peak GFLOP/s}
-= 6 \times 3.7 \times (2 \times 4 \times 2)
-= 355.2\ \text{GFLOP/s}
-$$
+- certain dimensions such as 1024, 2048 or 4096 performs extremely bad due to something called cache associativity conflicts. Find some solution to this, maybe add padding or maybe the packing solves this.
 
-where:
+- add counters for atleast cycles and l1d access and a easier way to profile certain sections.
 
-- `6` = physical CPU cores
-- `3.7` = base clock frequency in GHz
-- `2` = vector FMAs per cycle
-- `4` = doubles per vector
-- `2` = FLOPs per double (multiply + add)
+- 
+
+Performed using `double` precision (FP64) and matrix dims: 2000×2000
+
+Compiled with following flags: -O3 -march=native -fopenmp
+
+The theoretical peak performance of my Intel i5-1135G7
+4 cores
+2.4 GHz
+2 * 4 * 2 = 16 FLOPs/cycle/core
+peak FP64 = 4 (cores) * 2.4 (GHz) * (2 * 4 * 2 ) = 153.6 GFLOP/s
+
 
 | Implementation | Description | Block Size | Median Time (s) | Performance (GFLOP/s) | % of Theoretical Peak | Speedup vs. Naive |
 |:---------------|:------------|:----------:|----------------:|----------------------:|----------------------:|------------------:|
-| `matMul`   | Naive implementation | — | 7.891 | 2.03 | 0.57% | 1.00× |
-| `matMulV1` | Linear memory access for A and B | — | 1.895 | 8.44 | 2.38% | 4.16× |
-| `matMulV2` | Cache blocking with linear memory access | 64 | 1.161 | 13.78 | 3.88% | 6.80× |
-| `matMulV3` | Cache blocking with reduced memory traffic | 64 | 0.763 | 20.96 | 5.90% | 10.34× |
-| `matMulV4` | Baseline OpenMP implementation | — | 3.908 | 4.09 | 1.15% | 2.02× |
-| `matMulV5` | Cache blocking + OpenMP + linear memory access | 64 | 0.139 | 115.23 | 32.44% | 56.77× |
-| `matMulV6` | V5 + 256-bit SIMD | 64 | 0.176 | 89.26 | 25.13% | 44.84× |
-| `matMulV7` | V5 + 512-bit SIMD | 64 | 0.204 | 78.74 | 22.17% | 38.68× |
-| `matMulV8` | V5 + 512-bit SIMD + register blocking | 64 | **0.110** | **145.39** | **40.93%** | **71.70×** |
+| `matMul`    | Naive implementation | — | 7.891 | 2.03 | 0.57% | 1.00× |
+| `matMulV1`  | Linear memory access for A and B | — | 3.960 | 4.04 | 2.63% | 1.99× |
+| `matMulV2`  | Cache blocking with linear memory access | 64 | 1.716 | 9.32 | 6.07% | 4.60× |
+| `matMulV3`  | Cache blocking with reduced memory traffic | 64 | 1.218 | 13.14 | 8.55% | 6.48× |
+| `matMulV4`  | Baseline OpenMP implementation | — | 3.908 | 4.09 | 1.15% | 2.02× |
+| `matMulV5`  | Cache blocking + OpenMP + linear memory access | 64 | 0.351 | 45.60 | 29.69% | 22.49× |
+| `matMulV6`  | V5 + 256-bit SIMD | 64 | 0.534 | 29.99 | 19.53% | 14.79× |
+| `matMulV7`  | V5 + 512-bit SIMD | 64 | 0.480 | 33.31 | 21.69% | 16.43× |
+| `matMulV8`  | V7 + separate block sizes per dimension | TODO | 0.332 | 48.12 | 31.33% | 23.73× |
+| `matMulV9`  | V5 + 512-bit SIMD + register blocking | 64 | 0.303 | 52.78 | 34.36% | 26.03× |
+| `matMulV10` | V9 + separate block sizes per dimension | TODO | **0.175** | **91.58** | **59.62%** | **45.17×** |
 
 ### SIMD Performance
 
@@ -57,8 +64,5 @@ next kernel improvement will be here (Matrix.cpp, line 206): (implemented in V8)
 this is a bottleneck as it repeatedly loads from and stores to dest jblock times.
 
 We got pretty impressive results in V8 by fixing this problem in the SIMD kernel by using register blocking
-
-
-
-**Theoretical FP64 peak:** 355.2 GFLOP/s
+and even more impressiv results when  
 

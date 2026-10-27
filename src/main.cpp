@@ -54,7 +54,6 @@ double benchmark(
     // FLOP/s to GFLOP/s
     double gflops = flops / median / 1e9;
     // calculations shown at the end of this file
-    // constexpr double theoreticalPeak = 355.2;
     constexpr double theoreticalPeak = 153.6;
 
     double percentOfPeak = (gflops / theoreticalPeak) * 100.0;
@@ -87,31 +86,23 @@ void matMulTestSuite()
         }
     }
     
-    // input 2000x2000 for all
-    // benchmark<T>(Matrix<double>::matMul, dest, m1, m2);
-    // benchmark<T>(Matrix<double>::matMulV1, dest, m1, m2);
-    // benchmark<T>(Matrix<double>::matMulV2, dest, m1, m2);
-    // benchmark<T>(Matrix<double>::matMulV3, dest, m1, m2);
-    // benchmark<T>(Matrix<double>::matMulV4, dest, m1, m2);
-    // benchmark<T>(Matrix<double>::matMulV5, dest, m1, m2);
-    // benchmark<T>(Matrix<double>::matMulV6, dest, m1, m2);
-    // benchmark<T>(Matrix<double>::matMulV7, dest, m1, m2);
-    // benchmark<T>(Matrix<double>::matMulV8, dest, m1, m2);
+
+    benchmark<T>(Matrix<double>::matMulV10, dest, m1, m2);
+    
+
+    dest.initToZero();
     PerfCounter pc;
     
     auto instructions = pc.measure( [&] {
-        Matrix<double>::matMul(dest, m1, m2);
+        Matrix<double>::matMulV10(dest, m1, m2);
     });
 
     std::cout << "used instructions: " << instructions << "\n";
-    // Matrix<double>::matMulV8(dest, m1, m2);
-    // Matrix<double>::matMul(dest, m1, m2);
-    //dest.printScalar();
+
 }
 
 int main()
 {
-    detectSimd();
     matMulTestSuite<double>();
 }
 
@@ -121,23 +112,63 @@ Notes:
 
 general Peak GFLOP/s = cores x GHz x FLOPs/cycle/core
 
-for my CPU (Ryzen 5 7500f) using double (FP64)
+naive:
+keep the same
 
-Peak GFLOP/s = 6 x 3.7 Ghz x (2 x 4 x 2) = 355.2
-where: 
-6   = physical CPU cores
-3.7 = GHz base clock
-2   = 256-bit vector FMAs per cycle per core
-4   = doubles per 256-bit vector
-2   = FLOPs per double in an FMA, as it includes mul&add
+V1:
+Median time:         3.95974 s
+Performance:         4.04067 GFLOP/s
+Theoretical peak:    153.6 GFLOP/s
+Percent of peak:     2.63065 %
 
-FMA      Fused Multiply-Add
-FLOP     Floating-Point Operation
-GFLOP/s  10^9 floating operations per second
+V2:
+Median time:         1.71642 s
+Performance:         9.32175 GFLOP/s
+Theoretical peak:    153.6 GFLOP/s
+Percent of peak:     6.06885 %
 
-i5
-4 cores
-2.4 GHz
-2 * 4 * 2 = 16 FLOPs/cycle/core
-peak FP64 = 4 (cores) * 2.4 (GHz) * (2 * 4 * 2 ) = 153.6 GFLOP/s
+V3:
+Median time:         1.2179 s
+Performance:         13.1374 GFLOP/s
+Theoretical peak:    153.6 GFLOP/s
+Percent of peak:     8.553 %
+
+V4:
+keep the same
+
+V5:
+Median time:         0.350853 s
+Performance:         45.6032 GFLOP/s
+Theoretical peak:    153.6 GFLOP/s
+Percent of peak:     29.6896 %
+
+V6:
+Median time:         0.533503 s
+Performance:         29.9905 GFLOP/s
+Theoretical peak:    153.6 GFLOP/s
+Percent of peak:     19.5251 %
+
+V7:
+Median time:         0.48033 s
+Performance:         33.3104 GFLOP/s
+Theoretical peak:    153.6 GFLOP/s
+Percent of peak:     21.6865 %
+
+V8:
+Median time:         0.332481 s
+Performance:         48.123 GFLOP/s
+Theoretical peak:    153.6 GFLOP/s
+Percent of peak:     31.3301 %
+
+V9:
+Median time:         0.303146 s
+Performance:         52.7799 GFLOP/s
+Theoretical peak:    153.6 GFLOP/s
+Percent of peak:     34.3619 %
+
+V10:
+Median time:         0.174707 s
+Performance:         91.5819 GFLOP/s
+Theoretical peak:    153.6 GFLOP/s
+Percent of peak:     59.6236 %
 */

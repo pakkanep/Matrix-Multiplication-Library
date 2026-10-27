@@ -106,6 +106,44 @@ void Matrix<T>::baseLineKernelV2(
     }
 }
 
+template <typename T>
+void Matrix<T>::baseLineKernelV3(
+    const T* a,
+    const T* mb,
+    T* c,
+    int Acols,
+    int Bcols,
+    int blockRows,
+    int blockDepth,
+    int blockCols
+)
+{
+    constexpr int CREGS = 64;
+    int barrier = std::min(CREGS, blockCols);
+
+    for (int i = 0; i < blockRows; ++i, c += Bcols, a += Acols)
+    {
+        const T* b = mb;
+
+        T c_temp[CREGS] = {};
+
+        for (int k = 0; k < blockDepth; ++k, b += Bcols)
+        {
+            const T a_ik = a[k];
+
+            for (int j = 0; j < barrier; ++j)
+            {
+                c_temp[j] += a_ik * b[j];
+            }
+        }
+
+        for (int j = 0; j < barrier; ++j)
+        {
+            c[j] += c_temp[j];
+        }
+    }
+}
+
 
 template <>
 void Matrix<double>::kernelSIMD256(
@@ -115,8 +153,8 @@ void Matrix<double>::kernelSIMD256(
     int Acols,
     int Bcols,
     int iBlock,
-    int jBlock,
-    int kBlock
+    int kBlock,
+    int jBlock
 )
 {
     constexpr int width = 256 / (sizeof(double) * 8); // so we process 4 doubles/per computation
@@ -371,7 +409,7 @@ void Matrix<T>::matMulV3(Matrix<T>& dest, const Matrix<T>& srcA, const Matrix<T>
     }
 }
 
-// baseline OpenMP implementation, perfomance suffers from non linear memory access 
+// baseline OpenMP implementation, perfomance suffers from non-linear memory access 
 template <typename T>
 void Matrix<T>::matMulV4(Matrix<T>& dest, const Matrix<T>& srcA, const Matrix<T>& srcB)
 {
@@ -404,38 +442,37 @@ void Matrix<T>::matMulV5(Matrix<T>& dest, const Matrix<T>& srcA, const Matrix<T>
 
     constexpr int BLOCK = 64;
 
-    #pragma omp parallel for schedule(static)
+    #pragma omp parallel for schedule(dynamic)
     for (int ib = 0; ib < rowsA; ib += BLOCK)
     {
         const int iBlock = std::min(BLOCK, rowsA - ib);
 
-        for (int jb = 0; jb < colsB; jb += BLOCK)
+        for (int kb = 0; kb < colsA; kb += BLOCK)
         {
-            const int jBlock = std::min(BLOCK, colsB - jb);
-
-            for (int kb = 0; kb < colsA; kb += BLOCK)
+            const int kBlock = std::min(BLOCK, colsA - kb);
+            
+            for (int jb = 0; jb < colsB; jb += BLOCK)
             {
-                const int kBlock = std::min(BLOCK, colsA - kb);
-
+                const int jBlock = std::min(BLOCK, colsB - jb);
+                
                 const T* a = &srcA(ib, kb);
                 const T* b = &srcB(kb, jb);
                 T* c       = &dest(ib, jb);
 
-                baseLineKernelV2(
+                baseLineKernelV3(
                     a,
                     b,
                     c,
                     colsA,
                     colsB,
                     iBlock,
-                    jBlock,
-                    kBlock
+                    kBlock,
+                    jBlock
                 );
             }
         }
     }
 }
-
 
 template <>
 void Matrix<double>::matMulV6(Matrix<double>& dest, const Matrix<double>& srcA, const Matrix<double>& srcB)
@@ -444,20 +481,22 @@ void Matrix<double>::matMulV6(Matrix<double>& dest, const Matrix<double>& srcA, 
     int colsA = srcA.cols;
     int colsB = srcB.cols;
 
-    constexpr int BLOCK = 64;
+    constexpr int BLOCK_I = 64;
+    constexpr int BLOCK_K = 64;
+    constexpr int BLOCK_J = 64;
 
-    #pragma omp parallel for schedule(static)
-    for (int ib = 0; ib < rowsA; ib += BLOCK)
+    #pragma omp parallel for schedule(dynamic)
+    for (int ib = 0; ib < rowsA; ib += BLOCK_I)
     {
-        const int iBlock = std::min(BLOCK, rowsA - ib);
+        const int iBlock = std::min(BLOCK_I, rowsA - ib);
 
-        for (int jb = 0; jb < colsB; jb += BLOCK)
+        for (int kb = 0; kb < colsA; kb += BLOCK_K)
         {
-            const int jBlock = std::min(BLOCK, colsB - jb);
-
-            for (int kb = 0; kb < colsA; kb += BLOCK)
+            const int kBlock = std::min(BLOCK_K, colsA - kb);
+        
+            for (int jb = 0; jb < colsB; jb += BLOCK_J)
             {
-                const int kBlock = std::min(BLOCK, colsA - kb);
+                const int jBlock = std::min(BLOCK_J, colsB - jb);
 
                 const double* a = &srcA(ib, kb);
                 const double* b = &srcB(kb, jb);
@@ -470,8 +509,8 @@ void Matrix<double>::matMulV6(Matrix<double>& dest, const Matrix<double>& srcA, 
                     colsA,
                     colsB,
                     iBlock,
-                    jBlock,
-                    kBlock
+                    kBlock,
+                    jBlock
                 );
             }
         }
@@ -480,6 +519,47 @@ void Matrix<double>::matMulV6(Matrix<double>& dest, const Matrix<double>& srcA, 
 
 template <>
 void Matrix<double>::matMulV7(Matrix<double>& dest, const Matrix<double>& srcA, const Matrix<double>& srcB)
+{
+    int rowsA = srcA.rows;
+    int colsA = srcA.cols;
+    int colsB = srcB.cols;
+
+    constexpr int BLOCK = 64;
+
+    #pragma omp parallel for schedule(dynamic)
+    for (int ib = 0; ib < rowsA; ib += BLOCK)
+    {
+        const int iBlock = std::min(BLOCK, rowsA - ib);
+
+        for (int kb = 0; kb < colsA; kb += BLOCK)
+        {
+            const int kBlock = std::min(BLOCK, colsA - kb);
+
+            for (int jb = 0; jb < colsB; jb += BLOCK)
+            {
+                const int jBlock = std::min(BLOCK, colsB - jb);
+
+                const double* a = &srcA(ib, kb);
+                const double* b = &srcB(kb, jb);
+                double* c       = &dest(ib, jb);
+
+                Matrix<double>::kernelSIMD512(
+                    a,
+                    b,
+                    c,
+                    colsA,
+                    colsB,
+                    iBlock,
+                    kBlock,
+                    jBlock
+                );
+            }
+        }
+    }
+}
+
+template <>
+void Matrix<double>::matMulV8(Matrix<double>& dest, const Matrix<double>& srcA, const Matrix<double>& srcB)
 {
     int rowsA = srcA.rows;
     int colsA = srcA.cols;
@@ -521,8 +601,50 @@ void Matrix<double>::matMulV7(Matrix<double>& dest, const Matrix<double>& srcA, 
     }
 }
 
+
 template <>
-void Matrix<double>::matMulV8(Matrix<double>& dest, const Matrix<double>& srcA, const Matrix<double>& srcB)
+void Matrix<double>::matMulV9(Matrix<double>& dest, const Matrix<double>& srcA, const Matrix<double>& srcB)
+{
+    int rowsA = srcA.rows;
+    int colsA = srcA.cols;
+    int colsB = srcB.cols;
+
+    constexpr int BLOCK = 64;
+
+    #pragma omp parallel for schedule(dynamic)
+    for (int ib = 0; ib < rowsA; ib += BLOCK)
+    {
+        const int iBlock = std::min(BLOCK, rowsA - ib);
+
+        for (int kb = 0; kb < colsA; kb += BLOCK)
+        {
+            const int kBlock = std::min(BLOCK, colsA - kb);
+            
+            for (int jb = 0; jb < colsB; jb += BLOCK)
+            {
+                const int jBlock = std::min(BLOCK, colsB - jb);
+
+                const double* a = &srcA(ib, kb);
+                const double* b = &srcB(kb, jb);
+                double* c       = &dest(ib, jb);
+
+                Matrix<double>::kernelSIMD512V2(
+                    a,
+                    b,
+                    c,
+                    colsA,
+                    colsB,
+                    iBlock,
+                    kBlock,
+                    jBlock
+                );
+            }
+        }
+    }
+}
+
+template <>
+void Matrix<double>::matMulV10(Matrix<double>& dest, const Matrix<double>& srcA, const Matrix<double>& srcB)
 {
     int rowsA = srcA.rows;
     int colsA = srcA.cols;

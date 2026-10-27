@@ -68,6 +68,17 @@ class Matrix
     int blockCols
     );
 
+    static void baseLineKernelV3(
+    const T* a,
+    const T* mb,
+    T* c,
+    int Acols,
+    int Bcols,
+    int blockRows,
+    int blockDepth,
+    int blockCols
+    );
+
 
     static void kernelSIMD256(
         const T* srcA,
@@ -111,5 +122,8 @@ class Matrix
     static void        matMulV6(Matrix& dest, const Matrix& srcA, const Matrix& srcB);
     static void        matMulV7(Matrix& dest, const Matrix& srcA, const Matrix& srcB);
     static void        matMulV8(Matrix& dest, const Matrix& srcA, const Matrix& srcB);
+    static void        matMulV9(Matrix& dest, const Matrix& srcA, const Matrix& srcB);
+    static void        matMulV10(Matrix& dest, const Matrix& srcA, const Matrix& srcB);
+
     
 };
